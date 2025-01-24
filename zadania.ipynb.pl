@@ -71,6 +71,72 @@ najkrotsza_droga(X, Y) :-
 %Najkrótsza droga z warszawa do gdansk
  Trasa: [warszawa, gdansk]
  Koszt: 500 PLN
- 
+
+ %Fakty
+produkty([produkt(tv, 10, sektor_a),
+          produkt(pralka, 5, sektor_b),
+          produkt(lodowka, 3, sektor_c)]).
+%Reguły
+dostepny_produkt(X) :- produkty(Produkty), member(produkt(X, Ilosc, _), Produkty), Ilosc > 0.
+przenies_produkt(X, NowySektor, NowaLista) :-
+    produkty(Produkty),
+    delete(Produkty, produkt(X, Ilosc, _), TymczasowaLista),
+    append(TymczasowaLista, [produkt(X, Ilosc, NowySektor)], NowaLista).
+uzupelnij_stan(X, DodanaIlosc, NowaLista) :-
+    produkty(Produkty),
+    member(produkt(X, Ilosc, Sektor), Produkty),
+    NowaIlosc is Ilosc + DodanaIlosc,
+    delete(Produkty, produkt(X, Ilosc, Sektor), TymczasowaLista),
+    append(TymczasowaLista, [produkt(X, NowaIlosc, Sektor)], NowaLista).
+
+?- dostepny_produkt(tv). %true
+?- przenies_produkt(tv, sektor_b, NowaLista). %NowaLista = [produkt(pralka,5,sektor_b), produkt(lodowka,3,sektor_c), produkt(tv,_,sektor_b)]
+?- uzupelnij_stan(pralka, 3, NowaLista). %NowaLista = [produkt(tv,10,sektor_a), produkt(lodowka,3,sektor_c), produkt(pralka,8,sektor_b)]
+     %Fakty:
+miasto(warszawa).
+miasto(krakow).
+miasto(poznan).
+droga(warszawa, krakow, 4).
+droga(krakow, poznan, 3).
+droga(warszawa, poznan, 7).
+
+% Reguły:
+droga(X, Y) :- droga(X, Y, _).
+droga(X, Y) :- droga(Y, X, _).
+czas_przejazdu(X, Y, T) :-
+    droga(X, Y, T).
+czas_przejazdu(X, Y, T) :-
+    droga(X, Z, T1),
+    czas_przejazdu(Z, Y, T2),
+    T is T1 + T2.
+najkrotsza_trasa(X, Y) :-
+    findall(T, czas_przejazdu(X, Y, T), ListaCzasow),
+    min_list(ListaCzasow, NajkrotszyCzas),
+    format('Najkrótszy czas przejazdu: ~w', [NajkrotszyCzas]).
+?- droga(warszawa, krakow). %true
+?- czas_przejazdu(warszawa, poznan, T). %T = 7
+?- najkrotsza_trasa(warszawa, poznan). %Najkrótszy czas przejazdu: 7 true
+     % Fakty
+
+ksiazka('W pustyni i w puszczy', sienkiewicz, przygodowa).
+ksiazka('Hobbit', tolkien, fantasy).
+ksiazka('Pan Tadeusz', mickiewicz, poezja).
+ocena(uzytkownik1, 'W pustyni i w puszczy', 5).
+ocena(uzytkownik1, 'Hobbit', 4).
+ocena(uzytkownik1, 'Pan Tadeusz', 3).
+preferencje(uzytkownik1, fantasy).
+
+%Reguły
+polecane_ksiazki(Uzytkownik, Gatunek) :-
+    preferencje(Uzytkownik, Gatunek),
+    findall(Tytul, (ksiazka(Tytul, _, Gatunek),
+                    ocena(Uzytkownik, Tytul, Ocena),
+                    Ocena >= 4),
+            Ksiazki),
+    list_to_set(Ksiazki, KsiazkiUnikalne),
+    write(KsiazkiUnikalne).
+?- polecane_ksiazki(uzytkownik1, fantasy). %['Hobbit'] true
+     
+
 
  
